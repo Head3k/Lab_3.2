@@ -1,8 +1,11 @@
 all:main
 
-
-main:build/src/main.o
-	gcc -Wall build/src/main.o -o bin/main -lm
+main:build/src/main.o build/src/coder.o build/src/comand.o
+	gcc -Wall build/src/main.o build/src/coder.o build/src/comand.o -o bin/main -lm
+build/src/coder.o:src/coder.c
+	gcc -Wall -c src/coder.c -o build/src/coder.o
+build/src/comand.o:src/comand.c
+	gcc -Wall -c src/comand.c -o build/src/comand.o
 build/src/main.o:src/main.c
 	gcc -Wall -c src/main.c -o build/src/main.o
 
