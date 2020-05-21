@@ -1,156 +1,156 @@
+#include <stdint.h>
+#include <stdlib.h>
 #include <inttypes.h>
 #include <math.h>
-#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-/*void showbits(unsigned int x)
+#include "comand.h"
+#include "coder.h"
+
+int encode(uint32_t code_point, CodeUnit *code_units)
 {
-for (int i = (sizeof(int) * 8) - 1; i >= 0; i--)
-{
-putchar(x & (1u << i) ? '1' : '0');
-}
-printf("\n");
-}*/
-enum { MaxCodeLength = 4 };
-typedef struct {
-    uint8_t code[MaxCodeLength];
-    size_t length;
-} CodeUnit;
-int encode(uint32_t code_point, CodeUnit* code_units)
-{
-    int count = 0;
-    uint32_t c = code_point;
-    while (c) //считаем кол-во битов в числе
+int count = 0;
+uint32_t c = code_point;
+    while (c) //СЃС‡РёС‚Р°РµРј РєРѕР»-РІРѕ Р±РёС‚РѕРІ РІ С‡РёСЃР»Рµ
     {
-        c >>= 1;
+        c >>= 1; 
         count++;
     }
-    if (count < 8) {
+    if (count < 8)//РµСЃР»Рё Р±РёС‚ РјРµРЅСЊС€Рµ 8, С‚Рѕ РєРѕРґРёСЂСѓРµРј РєР°Рє РѕР±С‹С‡РЅРѕРµ С‡РёСЃР»Рѕ 
+    {
         code_units->length = 1;
         code_units->code[0] = 0x7f & code_point;
-    } else {
-        code_units->length
-                = (count + 3) % 5; //кол-во байт взакодированном числе
-        if (code_units->length > 4) {
+    }
+    else
+    {
+        code_units->length = (count + 3) % 5; //РєРѕР»РёС‡РµСЃС‚РІРѕ Р±Р°Р№С‚ РІ Р·Р°РєРѕРґРёСЂРѕРІР°РЅРЅРѕРј С‡РёСЃР»Рµ
+        if (code_units->length > 4)
+        {
             return -1;
         }
-        size_t i;
-        int mask = 8 - code_units->length; //кол-вобит, на которое нужно
-                                           //сдвинуть для первого байта
-        code_units->code[0] = pow(2, code_units->length)
-                - 1; //выделяемслужебные единицы для первого байта
-        code_units->code[0] <<= mask; //исдвигаем их на место
-        for (i = code_units->length - 1; i > 0; i--) {
-            code_units->code[i] = 0x80 | (code_point & 0x3f);
-            code_point >>= 6; //заполняем остальные байты
+        int mask = 8 - code_units->length; //РєРѕР»-РІРѕ Р±РёС‚, РЅР° РєРѕС‚РѕСЂРѕРµ РЅСѓР¶РЅРѕ СЃРґРІРёРЅСѓС‚СЊ РґР»СЏ РїРµСЂРІРѕРіРѕ Р±Р°Р№С‚Р°
+         
+        code_units->code[0] = pow(2, code_units->length) - 1; //РІС‹РґРµР»СЏРµРј СЃР»СѓР¶РµР±РЅС‹Рµ РµРґРёРЅРёС†С‹ РґР»СЏ РїРµСЂРІРѕРіРѕ Р±Р°Р№С‚Р°
+        code_units->code[0] <<= mask; //СЃРґРІРёРіР°РµРј Р±Р°Р№С‚С‹ РЅР° РјРµСЃС‚Рѕ
+
+        for (size_t i = code_units->length - 1; i > 0; i--)
+        {
+            code_units->code[i] = 0x80 | (code_point & 0x3f);//РїСЂРµРѕР±СЂР°Р·РѕРІС‹РІР°РµС‚СЃСЏ Рє РІРёРґСѓ(10РҐРҐРҐРҐРҐРҐ)
+            code_point >>= 6; //Р·Р°РїРѕР»РЅСЏРµРј РѕСЃС‚Р°Р»СЊРЅС‹Рµ Р±Р°Р№С‚С‹
         }
-        code_units->code[0]
-                |= code_point; //оставшиеся биты соединяем спервым байтом
+
+        code_units->code[0] |= code_point; //РѕСЃС‚Р°РІС€РёРµСЃСЏ Р±РёС‚С‹ СЃРѕРµРґРёРЅСЏРµРј СЃ РїРµСЂРІС‹Рј Р±Р°Р№С‚РѕРј
     }
-    return 0;
+return 0;
 }
-uint32_t decode(const CodeUnit* code_unit)
+
+uint32_t decode(const CodeUnit *code_unit)
 {
     uint32_t dec = 0;
-    if (code_unit->length
-        == 1) //если длина 1, то закодированное число== оригиналу
+    if (code_unit->length == 1) //РµСЃР»Рё РґР»РёРЅР° 1, С‚Рѕ Р·Р°РєРѕРґРёСЂРѕРІР°РЅРЅРѕРµ С‡РёСЃР»Рѕ = РѕСЂРёРіРёРЅР°Р»Сѓ
     {
         dec = code_unit->code[0];
-    } else {
-        if (code_unit->length == 2) {
-            dec = code_unit->code[0] & 0x1f; //убираем служебные единицывпереди
-            dec <<= 6;
-            dec |= (0x3f & code_unit->code[1]); //декодируем второй байт
-        } else {
-            if (code_unit->length == 3) {
-                size_t i;
-                dec = code_unit->code[0]
-                        & 0xf; //убираем служебныеединицы впереди
-                for (i = 1; i < code_unit->length; i++) {
-                    dec <<= 6;
-                    dec |= (0x3f & code_unit->code[i]); //декодируемследующие
-                                                        //байты байт
+    }
+    else
+    {
+        if (code_unit->length == 2)//РµСЃР»Рё РґР»РёРЅР° 2 
+        {
+            dec = code_unit->code[0] & 0x1f; //СѓР±РёСЂР°РµРј СЃР»СѓР¶РµР±РЅС‹Рµ РµРґРёРЅРёС†С‹ 
+            dec <<= 6;                       //СЃРґРІРёРіР°РµРј РЅР° 6 Р±Р°Р№С‚РѕРІ РІР»РµРІРѕ 
+            dec |= (0x3f & code_unit->code[1]); //РґРµРєРѕРґРёСЂСѓРµРј СЃР»РµРґСѓСЋС‰РёР№ Р±Р°Р№С‚
+        } 
+        else
+        {
+            if (code_unit->length == 3)
+            {
+                dec = code_unit->code[0] & 0xf; //СѓР±РёСЂР°РµРј СЃР»СѓР¶РµР±РЅС‹Рµ РµРґРёРЅРёС†С‹
+                for (size_t i = 1; i < code_unit->length; i++)
+                {
+                    dec <<= 6;                  //СЃРґРІРёРіР°РµРј РЅР° 6 Р±Р°Р№С‚РѕРІ РІР»РµРІРѕ 
+                    dec |= (0x3f & code_unit->code[i]); //РґРµРєРѕРґРёСЂСѓРµРј СЃР»РµРґСѓСЋС‰РёРµ Р±Р°Р№С‚С‹
                 }
-            } else {
-                size_t i;
-                dec = code_unit->code[0]
-                        & 0x7; //убираем служебныеединицы впереди
-                for (i = 1; i < code_unit->length; i++) {
-                    dec <<= 6;
-                    dec |= (0x3f & code_unit->code[i]); //декодируемследующие
-                                                        //байты байт
+            }
+            else // РµСЃР»Рё РґР»РёРЅР° СЂР°РІРЅР° 4
+            {
+                dec = code_unit->code[0] & 0x7; //СѓР±РёСЂР°РµРј СЃР»СѓР¶РµР±РЅС‹Рµ РµРґРёРЅРёС†С‹
+                for (size_t i = 1; i < code_unit->length; i++)
+                {
+                    dec <<= 6;                  //СЃРґРІРёРіР°РµРј РЅР° 6 Р±Р°Р№С‚РѕРІ РІР»РµРІРѕ 
+                    dec |= (0x3f & code_unit->code[i]); //РґРµРєРѕРґРёСЂСѓРµРј СЃР»РµРґСѓСЋС‰РёРµ Р±Р°Р№С‚С‹ 
                 }
             }
         }
     }
-    return dec;
+return dec;
 }
-int write_code_unit(FILE* out, const CodeUnit* code_unit)
+
+
+int write_code_unit(FILE *out, const CodeUnit *code_unit)
 {
-    size_t i;
-    for (i = code_unit->length; i > 0; i--) //побайтово записываемв файл
+    for (size_t i = code_unit->length; i > 0; i--) //РїРѕР±Р°Р№С‚РѕРІРѕ Р·Р°РїРёСЃС‹РІР°РµРј РІ С„Р°Р№Р»
     {
-        size_t count = fwrite(
-                &code_unit->code[code_unit->length - i],
-                1,
-                sizeof(uint8_t),
-                out);
-        if (count != sizeof(uint8_t)) {
+        size_t count = fwrite(&code_unit->code[code_unit->length - i], 1, sizeof(uint8_t), out);
+        
+        if (count != sizeof(uint8_t))
+        {
             return -1;
         }
     }
-    return 0;
+return 0;
 }
+
 int read_next_code_unit(FILE* in, CodeUnit* code_units)
 {
     uint8_t n[4];
     code_units->length = 0;
-    size_t t = fread(&n[0], sizeof(uint8_t), 1, in); //считываем первыйбайт
-    if (t != 1) {
+    size_t t = fread(&n[0], sizeof(uint8_t), 1, in); //СЃС‡РёС‚С‹РІР°РµРј РїРµСЂРІС‹Р№ Р±Р°Р№С‚
+    if (t != 1) 
+    {
         return -1;
     }
-    if (n[0] >> 7 == 0) //если служебное число - 0
-    {
+    if (n[0] >> 7 == 0) //РµСЃР»Рё СЃР»СѓР¶РµР±РЅРѕРµ С‡РёСЃР»Рѕ - 0 
+    { 
         code_units->length = 1;
         code_units->code[0] = n[0];
-    } else {
-        int i;
-        for (i = 5; i >= 3; i--) {                  // showbits(n[0]);
-            if (n[0] >> (8 - i) == (pow(2, i) - 2)) //если байт не битый
+    }
+    else 
+        {
+            for (int i = 5; i >= 3; i--) 
             {
-                int count = 0;
-                uint8_t y = n[0] >> (8 - i + 1);
-                while (y) //считаем кол-во закодированных байт
-                {
-                    y >>= 1;
-                    count++;
-                }
-                int j;
-                for (j = 1; j < count; j++) {
-                    size_t t
-                            = fread(&n[j],
-                                    sizeof(uint8_t),
-                                    1,
-                                    in); //считываем следующий байт
-                    if (!t) {
-                        return -1;
+                if (n[0] >> (8 - i) == (pow(2, i) - 2)) // РµСЃР»Рё РјР°СЃРєР° СЂР°РІРЅР° СЃС‚РµРїРµРЅРё
+                {                                       // 110=(2^3)-2 (6=6)
+                    int count = 0;
+                    uint8_t y = n[0] >> (8 - i + 1);
+                    while (y) //СЃС‡РёС‚Р°РµРј РєРѕР»-РІРѕ Р·Р°РєРѕРґРёСЂРѕРІР°РЅРЅС‹С… Р±Р°Р№С‚
+                    { 
+                        y >>= 1;
+                        count++;
                     }
-                    if (n[j] >> 6 != 2) {
-                        return read_next_code_unit(
-                                in, code_units); //если байт битый
+                    for (int j = 1; j < count; j++) 
+                    {
+                        size_t t = fread(&n[j], sizeof(uint8_t), 1, in);//СЃС‡РёС‚С‹РІР°РµРј РѕСЃС‚Р°Р»СЊРЅС‹Рµ Р±Р°Р№С‚С‹
+                        
+                        if (!t) //РїСЂРѕРІРµСЂРєР° fread
+                        {
+                            return -1;
+                        }
+                        
+                        if (n[j] >> 6 != 2) //РµСЃР»Рё РЅРµ 10......
+                        {
+                            return read_next_code_unit(in, code_units);
+                        }
                     }
+                    for (int j = 0; j < count; j++) 
+                    {
+                        code_units->code[j] = n[j]; //Р·Р°РїРёСЃС‹РІР°РµРј РІ СЃС‚СЂСѓРєС‚СѓСЂСѓ
+                    }
+                    code_units->length = count;
+                    break;
                 }
-                for (j = 0; j < count; j++) {
-                    code_units->code[j] = n[j]; //записываем в структуру
-                }
-                code_units->length = count;
-                break;
             }
         }
-    }
-    if (code_units->length == 0) //если не зашёл в цикл - битый байт(10xxxxxx)
-    {
-        return read_next_code_unit(in, code_units);
-    }
-    return 0;
+        if (code_units->length == 0) //РїСЂРѕРІРµСЂСЏРµРј, Р·Р°С€Р»Рё Р»Рё РјС‹ РІ if
+        { 
+            return read_next_code_unit(in, code_units);
+        }
+return 0;
 }
