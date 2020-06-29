@@ -1,10 +1,7 @@
 all:main
 
-
-main:build/src/main.o
-	gcc -Wall build/src/main.o -o bin/main -lm
-build/src/main.o:src/main.c
-	gcc -Wall -c src/main.c -o build/src/main.o
+main:src/main.c
+	gcc -Wall -o main -I src src/main.c src/coder.c src/comand.c -lm
 
 move:
 	cp -r ../Lab_3.1/build/*.bin bin/
