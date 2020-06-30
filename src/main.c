@@ -4,26 +4,26 @@
 #include <stdio.h>
 int main(int argc, char* argv[])
 {
-	if (argc != 4) //if error cmd enter
+	if (argc != 4) //если некорректное кол-во аргументов команднойстроки
 	{
-	printf("Error arguments cmd\n");
+	printf("Неверные аргументы командной строки. Программа завершается...\n");
 	return 0;
 		}
 	else
 	{
-		if (!strcmp(argv[1], "decode")) //if decode
+		if (!strcmp(argv[1], "decode")) //если decode
 		{
-			decode_file(argv[2], argv[3]); //decoding
+			decode_file(argv[2], argv[3]); //декодируем
 		}
 		else
 		{
-			if (!strcmp(argv[1], "encode")) //encode
+			if (!strcmp(argv[1], "encode")) //если encode
 			{
-				encode_file(argv[2], argv[3]); //encoding
+				encode_file(argv[2], argv[3]); //кодируем
 			}
-			else //if wrong command
+			else //если неправильная команда
 			{
-				printf("Error arguments cmd\n");
+				printf("Неверные аргументы командной строки. Программазавершается...\n");
 					return 0;
 			}
 		}
